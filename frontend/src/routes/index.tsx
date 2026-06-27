@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-// ─── FIXED URL: REMOVED THE TRAILING SLASH TO PREVENT DOUBLE SLASH ERRORS ───
+// ─── PRODUCTION API LINK BINDING (REMOVED TRAILING SLASH TO PREVENT // ROUTING FAILURES) ───
 const API_BASE = "https://fish-freshness-system.onrender.com";
 
 // ---------- Types ----------
@@ -296,10 +296,13 @@ function MetricsDashboard() {
       </div>
 
       <div className="mt-10">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-5 py-2.5 text-sm font-medium text-foreground transition-all hover:glow-cyan cursor-pointer" onClick={() => setOpen((o) => !o)}>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-5 py-2.5 text-sm font-medium text-foreground transition-all hover:glow-cyan"
+        >
           <span className={`inline-block h-1.5 w-1.5 rounded-full bg-[var(--cyan)] transition-transform ${open ? "scale-150" : ""}`} />
           {open ? "Hide" : "Reveal"} Confusion Matrix
-        </div>
+        </button>
 
         <div
           className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-500 ${
@@ -397,9 +400,13 @@ interface ScannerState {
 }
 
 function ScannerInterface() {
-  const [state, setState] = useState<ScannerState>(
-    { file: null, previewUrl: null, loading: false, result: null, error: null }
-  );
+  const [state, setState] = useState<ScannerState>({
+    file: null,
+    previewUrl: null,
+    loading: false,
+    result: null,
+    error: null,
+  });
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -414,13 +421,50 @@ function ScannerInterface() {
   const submit = useCallback(async (file: File) => {
     const url = URL.createObjectURL(file);
     setState({ file, previewUrl: url, loading: true, result: null, error: null });
+    
     try {
-      const fd = new FormData();
-      fd.append("file", file);
+      // ─── 🌟 NATIVE HARDWARE CANVAS IMAGE COMPRESSION BLOCK 🌟 ───
+      const img = new Image();
+      img.src = url;
       
-      // ─── SAFE STRING INTERPOLATION: RESOLVES TO /infer SECURELY ───
+      const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          
+          // Match the exact expected dimension shape of the ONNX matrix structure
+          canvas.width = 384;
+          canvas.height = 384;
+          
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Failed to initialize structural canvas layout pipeline context."));
+            return;
+          }
+          
+          // Downsample high-res photo directly onto the 384x384 canvas container grid
+          ctx.drawImage(img, 0, 0, 384, 384);
+          
+          // Convert matrix into highly efficient JPEG binary format at an optimized 85% fidelity ratio
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("Browser engine canvas quantization extraction error."));
+            },
+            "image/jpeg",
+            0.85
+          );
+        };
+        img.onerror = () => reject(new Error("Failed parsing image asset metadata structure boundaries."));
+      });
+
+      // Append shrunken 50KB dataset binary slice to Form streams
+      const fd = new FormData();
+      fd.append("file", compressedBlob, "compressed_mobile_sample.jpg");
+      
+      // Dispatch payload cleanly to production endpoint
       const r = await fetch(`${API_BASE}/infer`, { method: "POST", body: fd });
       const data = (await r.json()) as InferResponse;
+      
       if (!data.success) {
         setState((s) => ({ ...s, loading: false, error: data.error_message || "Inference failed." }));
         return;
@@ -454,6 +498,7 @@ function ScannerInterface() {
       />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-5">
+        {/* Dropzone Container */}
         <div className="lg:col-span-3">
           <div
             onDragOver={(e) => {
@@ -521,21 +566,23 @@ function ScannerInterface() {
 
           {(state.result || state.file) && !state.loading && (
             <div className="mt-4 flex items-center justify-end">
-              <div
+              <button
                 onClick={reset}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-4 py-2 text-xs font-medium text-foreground transition-all hover:glow-cyan cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-4 py-2 text-xs font-medium text-foreground transition-all hover:glow-cyan"
               >
                 <ResetIcon /> Scan New Sample
-              </div>
+              </button>
             </div>
           )}
         </div>
 
+        {/* Terminal Window block */}
         <div className="lg:col-span-2">
           <Terminal active={state.loading} />
         </div>
       </div>
 
+      {/* Visual Response Boards Mapping */}
       {state.result && (
         <div className="mt-10 space-y-6">
           <VerdictBanner verdict={state.result.freshness_class} confidence={state.result.confidence} />
