@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://fish-freshness-system.onrender.com/";
 
 // ---------- Types ----------
 type Verdict = "Fresh" | "Not Fresh";
