@@ -1,0 +1,21 @@
+# Frontend exclusions
+frontend/node_modules/
+frontend/.dist/
+frontend/dist/
+
+# Backend exclusions
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+backend/static/uploads/*
+backend/static/processed/*
+
+# Exclude heavy deep learning model checkpoint weights
+*.pth
+backend/*.pth
+
+# System files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
