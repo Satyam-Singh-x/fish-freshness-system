@@ -13,7 +13,8 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-const API_BASE = "https://fish-freshness-system.onrender.com/";
+// ─── FIXED URL: REMOVED THE TRAILING SLASH TO PREVENT DOUBLE SLASH ERRORS ───
+const API_BASE = "https://fish-freshness-system.onrender.com";
 
 // ---------- Types ----------
 type Verdict = "Fresh" | "Not Fresh";
@@ -295,13 +296,10 @@ function MetricsDashboard() {
       </div>
 
       <div className="mt-10">
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-5 py-2.5 text-sm font-medium text-foreground transition-all hover:glow-cyan"
-        >
+        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-5 py-2.5 text-sm font-medium text-foreground transition-all hover:glow-cyan cursor-pointer" onClick={() => setOpen((o) => !o)}>
           <span className={`inline-block h-1.5 w-1.5 rounded-full bg-[var(--cyan)] transition-transform ${open ? "scale-150" : ""}`} />
           {open ? "Hide" : "Reveal"} Confusion Matrix
-        </button>
+        </div>
 
         <div
           className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-500 ${
@@ -318,7 +316,6 @@ function MetricsDashboard() {
 }
 
 function ConfusionMatrix() {
-  // rows: actual, cols: predicted
   const cells = [
     { label: "True Positive", value: 65, sub: "Fresh → Fresh", tone: "emerald" },
     { label: "False Negative", value: 4, sub: "Fresh → Not Fresh", tone: "crimson" },
@@ -400,13 +397,9 @@ interface ScannerState {
 }
 
 function ScannerInterface() {
-  const [state, setState] = useState<ScannerState>({
-    file: null,
-    previewUrl: null,
-    loading: false,
-    result: null,
-    error: null,
-  });
+  const [state, setState] = useState<ScannerState>(
+    { file: null, previewUrl: null, loading: false, result: null, error: null }
+  );
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -424,6 +417,8 @@ function ScannerInterface() {
     try {
       const fd = new FormData();
       fd.append("file", file);
+      
+      // ─── SAFE STRING INTERPOLATION: RESOLVES TO /infer SECURELY ───
       const r = await fetch(`${API_BASE}/infer`, { method: "POST", body: fd });
       const data = (await r.json()) as InferResponse;
       if (!data.success) {
@@ -459,7 +454,6 @@ function ScannerInterface() {
       />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-5">
-        {/* Dropzone */}
         <div className="lg:col-span-3">
           <div
             onDragOver={(e) => {
@@ -527,23 +521,21 @@ function ScannerInterface() {
 
           {(state.result || state.file) && !state.loading && (
             <div className="mt-4 flex items-center justify-end">
-              <button
+              <div
                 onClick={reset}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-4 py-2 text-xs font-medium text-foreground transition-all hover:glow-cyan"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--cyan)]/40 glass px-4 py-2 text-xs font-medium text-foreground transition-all hover:glow-cyan cursor-pointer"
               >
                 <ResetIcon /> Scan New Sample
-              </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Terminal */}
         <div className="lg:col-span-2">
           <Terminal active={state.loading} />
         </div>
       </div>
 
-      {/* Verdict + comparative gallery */}
       {state.result && (
         <div className="mt-10 space-y-6">
           <VerdictBanner verdict={state.result.freshness_class} confidence={state.result.confidence} />
