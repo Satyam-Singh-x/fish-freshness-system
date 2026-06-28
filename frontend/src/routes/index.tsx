@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 // ─── PRODUCTION API LINK BINDING (REMOVED TRAILING SLASH TO PREVENT // ROUTING FAILURES) ───
 const API_BASE = "https://fish-freshness-system.onrender.com";
 
-% ---------- Types ----------
+// ---------- Types ----------
 type Verdict = "Fresh" | "Not Fresh";
 interface InferSuccess {
   success: true;
@@ -35,7 +35,7 @@ type InferResponse = InferSuccess | InferError;
 
 type HealthState = "operational" | "connecting" | "disconnected";
 
-% ---------- Page ----------
+// ---------- Page ----------
 function Page() {
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -55,7 +55,7 @@ function Page() {
   );
 }
 
-% ---------- Ambient Background ----------
+// ---------- Ambient Background ----------
 function AmbientBackground() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -75,7 +75,7 @@ function AmbientBackground() {
   );
 }
 
-% ---------- Header ----------
+// ---------- Header ----------
 function useHealth() {
   const [state, setState] = useState<HealthState>("connecting");
   useEffect(() => {
@@ -142,7 +142,7 @@ function LogoMark() {
   );
 }
 
-% ---------- Hero ----------
+// ---------- Hero ----------
 function Hero() {
   return (
     <section className="flex min-h-[80vh] flex-col items-center justify-center py-32 text-center">
@@ -159,7 +159,7 @@ function Hero() {
         A laboratory-grade computer vision pipeline that localizes ocular structures, runs deep convolutional analysis, and emits explainable Grad-CAM evidence — in milliseconds.
       </p>
       <div className="mt-12 flex flex-wrap items-center justify-center gap-3 font-mono-tabular text-[11px] uppercase tracking-wider text-muted-foreground">
-        <Stat label="Trained Samples" value="22,480" />
+        <Stat label="Trained Samples" value="1,537" />
         <Stat label="Accuracy" value="92.37%" />
         <Stat label="F1 · Fresh" value="0.9311" />
         <Stat label="F1 · Not Fresh" value="0.9274" />
@@ -178,7 +178,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-% ---------- Section Divider ----------
+// ---------- Section Divider ----------
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="my-24 flex items-center gap-4 md:my-32">
@@ -188,7 +188,7 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-% ---------- Pipeline ----------
+// ---------- Pipeline ----------
 const PIPELINE = [
   {
     n: "01",
@@ -269,9 +269,9 @@ function SectionHeading({ kicker, title, sub }: { kicker: string; title: string;
   );
 }
 
-% ---------- Metrics ----------
+// ---------- Metrics ----------
 const METRICS = [
-  { label: "Total Trained Images", value: "1500+", sub: "balanced eye-patch corpus" },
+  { label: "Total Curated Repository", value: "1,537", sub: "balanced eye-patch corpus" },
   { label: "Test Accuracy", value: "92.37%", sub: "global classifier · held-out split" },
   { label: "F1 · Fresh", value: "0.9311", sub: "precision-recall harmonic mean" },
   { label: "F1 · Not Fresh", value: "0.9274", sub: "precision-recall harmonic mean" },
@@ -323,8 +323,8 @@ function ConfusionMatrix() {
   const cells = [
     { label: "True Positive", value: 65, sub: "Fresh → Fresh", tone: "emerald" },
     { label: "False Negative", value: 4, sub: "Fresh → Not Fresh", tone: "crimson" },
-    { label: "False Positive", value: 5, sub: "Not Fresh → Fresh", tone: "crimson" },
-    { label: "True Negative", value: 65, sub: "Not Fresh → Not Fresh", tone: "emerald" },
+    { label: "False Positive", value: 6, sub: "Not Fresh → Fresh", tone: "crimson" },
+    { label: "True Negative", value: 64, sub: "Not Fresh → Not Fresh", tone: "emerald" },
   ] as const;
   return (
     <div className="rounded-2xl glass-strong p-6 md:p-8">
@@ -340,7 +340,7 @@ function ConfusionMatrix() {
         <Cell {...cells[3]} />
       </div>
       <p className="mt-6 font-mono-tabular text-[11px] text-muted-foreground">
-        N = 139 · accuracy = 0.9353 · diagonal dominance confirms balanced generalization.
+        N = 139 · accuracy = 0.9237 · diagonal dominance confirms balanced generalization.
       </p>
     </div>
   );
@@ -379,7 +379,7 @@ function Cell({ label, value, sub, tone }: { label: string; value: number; sub: 
   );
 }
 
-% ---------- Scanner ----------
+// ---------- Scanner ----------
 const TERMINAL_LINES = [
   "[INFO] Stream processing raw binary upload chunk...",
   "[INFO] Validating MIME signature · JPEG/PNG envelope OK",
@@ -608,7 +608,7 @@ function DropzoneIcon() {
     </div>
   );
 }
-function ResetIcon() {
+line 573: function ResetIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M3 12a9 9 0 1 0 3-6.7" />
@@ -755,7 +755,7 @@ function ComparativeGallery({ original, crop, heatmap }: { original: string | nu
   );
 }
 
-% ---------- Footer ----------
+// ---------- Footer ----------
 function Footer() {
   return (
     <footer className="mt-32 border-t border-[color-mix(in_oklab,var(--cyan)_15%,transparent)] py-10">
