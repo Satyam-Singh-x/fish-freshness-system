@@ -11,7 +11,7 @@
 
 **A production-grade deep learning system for automated fish freshness classification using computer vision and explainable AI**
 
-[Live Demo](https://fish-freshness-dectection-system.vercel.app/) • [API Docs](https://fish-freshness-system.onrender.com/docs) • [Research Paper](./fish_freshness_iit_report.pdf)
+[Live Demo](https://fish-freshness-dectection-system.vercel.app/) • [API Docs](https://fish-freshness-system.onrender.com/docs) • [Research Paper](https://drive.google.com/file/d/1pw7rLMP3ScKgeDUAH0VHwewZXCS1ApEi/view?usp=sharing)
 
 </div>
 
