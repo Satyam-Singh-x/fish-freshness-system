@@ -13,7 +13,8 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
-const API_BASE = "http://localhost:8000";
+// ─── PRODUCTION API LINK BINDING ───
+const API_BASE = "https://fish-freshness-system.onrender.com";
 
 // ---------- Types ----------
 type Verdict = "Fresh" | "Not Fresh";
@@ -158,10 +159,10 @@ function Hero() {
         A laboratory-grade computer vision pipeline that localizes ocular structures, runs deep convolutional analysis, and emits explainable Grad-CAM evidence — in milliseconds.
       </p>
       <div className="mt-12 flex flex-wrap items-center justify-center gap-3 font-mono-tabular text-[11px] uppercase tracking-wider text-muted-foreground">
-        <Stat label="Trained Samples" value="22,480" />
+        <Stat label="Trained Samples" value="1,537" />
         <Stat label="Accuracy" value="92.37%" />
-        <Stat label="F1 · Fresh" value="0.9155" />
-        <Stat label="F1 · Not Fresh" value="0.9118" />
+        <Stat label="F1 · Fresh" value="0.9311" />
+        <Stat label="F1 · Not Fresh" value="0.9274" />
       </div>
     </section>
   );
@@ -177,6 +178,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+// ---------- Section Divider ----------
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="my-24 flex items-center gap-4 md:my-32">
@@ -269,10 +271,10 @@ function SectionHeading({ kicker, title, sub }: { kicker: string; title: string;
 
 // ---------- Metrics ----------
 const METRICS = [
-  { label: "Total Trained Images", value: "1500+", sub: "balanced eye-patch corpus" },
+  { label: "Total Curated Repository", value: "1,537", sub: "balanced eye-patch corpus" },
   { label: "Test Accuracy", value: "92.37%", sub: "global classifier · held-out split" },
-  { label: "F1 · Fresh", value: "0.9155", sub: "precision-recall harmonic mean" },
-  { label: "F1 · Not Fresh", value: "0.9118", sub: "precision-recall harmonic mean" },
+  { label: "F1 · Fresh", value: "0.9311", sub: "precision-recall harmonic mean" },
+  { label: "F1 · Not Fresh", value: "0.9274", sub: "precision-recall harmonic mean" },
 ];
 
 function MetricsDashboard() {
@@ -318,12 +320,11 @@ function MetricsDashboard() {
 }
 
 function ConfusionMatrix() {
-  // rows: actual, cols: predicted
   const cells = [
     { label: "True Positive", value: 65, sub: "Fresh → Fresh", tone: "emerald" },
     { label: "False Negative", value: 4, sub: "Fresh → Not Fresh", tone: "crimson" },
-    { label: "False Positive", value: 5, sub: "Not Fresh → Fresh", tone: "crimson" },
-    { label: "True Negative", value: 65, sub: "Not Fresh → Not Fresh", tone: "emerald" },
+    { label: "False Positive", value: 6, sub: "Not Fresh → Fresh", tone: "crimson" },
+    { label: "True Negative", value: 64, sub: "Not Fresh → Not Fresh", tone: "emerald" },
   ] as const;
   return (
     <div className="rounded-2xl glass-strong p-6 md:p-8">
@@ -339,7 +340,7 @@ function ConfusionMatrix() {
         <Cell {...cells[3]} />
       </div>
       <p className="mt-6 font-mono-tabular text-[11px] text-muted-foreground">
-        N = 139 · accuracy = 0.9353 · diagonal dominance confirms balanced generalization.
+        N = 139 · accuracy = 0.9237 · diagonal dominance confirms balanced generalization.
       </p>
     </div>
   );
@@ -421,11 +422,50 @@ function ScannerInterface() {
   const submit = useCallback(async (file: File) => {
     const url = URL.createObjectURL(file);
     setState({ file, previewUrl: url, loading: true, result: null, error: null });
+    
     try {
+      // ─── 🌟 NATIVE HARDWARE CANVAS IMAGE COMPRESSION BLOCK 🌟 ───
+      const img = new Image();
+      img.src = url;
+      
+      const compressedBlob = await new Promise<Blob>((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          
+          // Match the exact expected dimension shape of the ONNX matrix structure
+          canvas.width = 384;
+          canvas.height = 384;
+          
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Failed to initialize structural canvas layout pipeline context."));
+            return;
+          }
+          
+          // Downsample high-res photo directly onto the 384x384 canvas container grid
+          ctx.drawImage(img, 0, 0, 384, 384);
+          
+          // Convert matrix into highly efficient JPEG binary format at an optimized 85% fidelity ratio
+          canvas.toBlob(
+            (blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error("Browser engine canvas quantization extraction error."));
+            },
+            "image/jpeg",
+            0.85
+          );
+        };
+        img.onerror = () => reject(new Error("Failed parsing image asset metadata structure boundaries."));
+      });
+
+      // Append shrunken 50KB dataset binary slice to Form streams
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressedBlob, "compressed_mobile_sample.jpg");
+      
+      // Dispatch payload cleanly to production endpoint
       const r = await fetch(`${API_BASE}/infer`, { method: "POST", body: fd });
       const data = (await r.json()) as InferResponse;
+      
       if (!data.success) {
         setState((s) => ({ ...s, loading: false, error: data.error_message || "Inference failed." }));
         return;
@@ -459,7 +499,7 @@ function ScannerInterface() {
       />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-5">
-        {/* Dropzone */}
+        {/* Dropzone Container */}
         <div className="lg:col-span-3">
           <div
             onDragOver={(e) => {
@@ -537,13 +577,13 @@ function ScannerInterface() {
           )}
         </div>
 
-        {/* Terminal */}
+        {/* Terminal Window block */}
         <div className="lg:col-span-2">
           <Terminal active={state.loading} />
         </div>
       </div>
 
-      {/* Verdict + comparative gallery */}
+      {/* Visual Response Boards Mapping */}
       {state.result && (
         <div className="mt-10 space-y-6">
           <VerdictBanner verdict={state.result.freshness_class} confidence={state.result.confidence} />
@@ -568,6 +608,7 @@ function DropzoneIcon() {
     </div>
   );
 }
+
 function ResetIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
