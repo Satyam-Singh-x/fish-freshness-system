@@ -13,8 +13,12 @@ export const Route = createFileRoute("/")({
   component: Page,
 });
 
+<<<<<<< Updated upstream
 // ─── PRODUCTION API LINK BINDING ───
 const API_BASE = "https://fish-freshness-system.onrender.com";
+=======
+const API_BASE = "https://fish-freshness-system.onrender.com/";
+>>>>>>> Stashed changes
 
 // ---------- Types ----------
 type Verdict = "Fresh" | "Not Fresh";
