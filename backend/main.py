@@ -1,6 +1,7 @@
 """
-FreshlyFishy Production API - ONNX Runtime Version
-Optimized for Render Free Tier (512MB RAM ceiling)
+FreshlyFishy Production API - Multi-Output Activation Engine
+Optimized for Render Free Tier (< 512MB RAM Ceiling)
+Authentic Layer Activation Feature Mapping Configuration
 """
 
 import asyncio
@@ -27,35 +28,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ─── SERVER DIRECTORY WORKSPACE ARCHITECTURE ───
-UPLOAD_DIR = Path("static/uploads")
-PROCESSED_DIR = Path("static/processed")
-
+# ─── RUNTIME PATH RESOLUTION ───
 CURRENT_DIR = Path(__file__).parent.resolve()
-ONNX_MODEL_PATH = CURRENT_DIR / "best_fish_eye_model.onnx"
+ONNX_MODEL_PATH = CURRENT_DIR / "best_fish_eye_model_dual.onnx"
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-
-# ─── IMAGENET NORMALIZATION CONSTANTS ───
+# ─── IMAGENET STANDARDIZATION TENSORS ───
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
-# ─── LIGHTWEIGHT PREPROCESSING UTILITIES ───
-def preprocess_image_numpy(image_bgr: np.ndarray, target_size: Tuple[int, int] = (384, 384)) -> np.ndarray:
-    img_resized = cv2.resize(image_bgr, target_size, interpolation=cv2.INTER_CUBIC)
-    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-    img_float = img_rgb.astype(np.float32) / 255.0
-    
-    img_normalized = np.transpose(img_float, (2, 0, 1))  # [3, H, W]
-    for i in range(3):
-        img_normalized[i] = (img_normalized[i] - IMAGENET_MEAN[i]) / IMAGENET_STD[i]
-        
-    batch_input = np.expand_dims(img_normalized, axis=0)
-    return batch_input.astype(np.float32)
-
-
+# ─── DETECTIONS & SEGMENATION PIPELINE ───
 def batch_hough_eye_segmentation_cv(img_bgr: np.ndarray, output_size: Tuple[int, int] = (384, 384)) -> np.ndarray:
     h, w, _ = img_bgr.shape
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
@@ -90,33 +72,53 @@ def batch_hough_eye_segmentation_cv(img_bgr: np.ndarray, output_size: Tuple[int,
     return cv2.resize(cropped_eye, output_size, interpolation=cv2.INTER_CUBIC)
 
 
-def img_to_base64(img_bgr: np.ndarray) -> str:
-    _, buffer = cv2.imencode('.png', img_bgr)
-    return base64.b64encode(buffer).decode('utf-8')
-
-
-def generate_lightweight_cam(feature_map: np.ndarray, original_img: np.ndarray, alpha: float = 0.45) -> np.ndarray:
-    if len(feature_map.shape) == 3:
-        cam = np.mean(feature_map, axis=2)
-    else:
-        cam = feature_map
+def preprocess_image_numpy(image_bgr: np.ndarray, target_size: Tuple[int, int] = (384, 384)) -> np.ndarray:
+    img_resized = cv2.resize(image_bgr, target_size, interpolation=cv2.INTER_CUBIC)
+    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
+    img_float = img_rgb.astype(np.float32) / 255.0
+    
+    img_normalized = np.transpose(img_float, (2, 0, 1))  # Convert layout to standard CHW
+    for i in range(3):
+        img_normalized[i] = (img_normalized[i] - IMAGENET_MEAN[i]) / IMAGENET_STD[i]
         
+    return np.expand_dims(img_normalized, axis=0).astype(np.float32)
+
+
+def generate_authentic_cam_overlay(feature_maps: np.ndarray, original_img: np.ndarray, alpha: float = 0.45) -> np.ndarray:
+    """
+    Computes a true spatial activation intensity map derived dynamically 
+    from the multi-channel structural configurations of the final adapter layer block.
+    """
+    # Channel-wise global averaging across the exposed [256, 96, 96] adapter matrix layout
+    cam = np.mean(feature_maps, axis=0)  # Condenses feature volume down to [96, 96]
+    
+    # Mathematical Rectification Pathway (In-line ReLU behavior emulation)
+    cam = np.maximum(cam, 0)
+    
+    # Scale intensity boundaries dynamically based on raw image conditions
     cam_min, cam_max = cam.min(), cam.max()
     if cam_max > cam_min:
         cam = (cam - cam_min) / (cam_max - cam_min)
     else:
         cam = np.zeros_like(cam)
         
-    if cam.shape != (384, 384):
-        cam = cv2.resize(cam, (384, 384))
+    # Interpolate from feature layer resolution back up to native [384, 384] frame size
+    cam_resized = cv2.resize(cam, (384, 384), interpolation=cv2.INTER_LINEAR)
         
-    cam_colored = cm.jet(cam)  # Returns RGBA matrix map
+    cam_colored = cm.jet(cam_resized)  # Render 8-bit RGBA color configurations mapping arrays
     cam_rgb = (cam_colored[:, :, :3] * 255).astype(np.uint8)
     cam_bgr = cv2.cvtColor(cam_rgb, cv2.COLOR_RGB2BGR)
+    
+    # Alpha blend the visual heatmap directly onto the cropped corneal canvas
     return cv2.addWeighted(original_img, 1.0 - alpha, cam_bgr, alpha, 0)
 
 
-# ─── GLOBAL ONNX RUNTIME STATE MANAGEMENT ───
+def img_to_base64(img_bgr: np.ndarray) -> str:
+    _, buffer = cv2.imencode('.png', img_bgr)
+    return base64.b64encode(buffer).decode('utf-8')
+
+
+# ─── RUNTIME CONTEXT ENGINE LIFECYCLE MANAGEMENT ───
 global_model_state: Dict[str, Any] = {
     "session": None,
     "lock": None
@@ -125,7 +127,7 @@ global_model_state: Dict[str, Any] = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing FishEyeNetAWPF ONNX Runtime Deployment Configuration Session...")
+    logger.info("Initializing FishEyeNetAWPF Dual-Output ONNX Session instance...")
     try:
         session_options = ort.SessionOptions()
         session_options.intra_op_num_threads = 1  
@@ -134,7 +136,7 @@ async def lifespan(app: FastAPI):
         session_options.log_severity_level = 3  
 
         if not ONNX_MODEL_PATH.exists():
-            logger.error(f"Static ONNX mapping target file missing from context: {ONNX_MODEL_PATH}")
+            logger.error(f"Critical execution barrier: target graph missing from path: {ONNX_MODEL_PATH}")
             raise FileNotFoundError(f"Model file missing: {ONNX_MODEL_PATH}")
 
         session = ort.InferenceSession(
@@ -143,12 +145,12 @@ async def lifespan(app: FastAPI):
             providers=['CPUExecutionProvider']
         )
 
-        logger.info("✓ ONNX Runtime execution provider hooked up smoothly.")
+        logger.info("✓ Multi-output ONNX computational graph successfully instantiated into memory.")
         global_model_state["session"] = session
         global_model_state["lock"] = asyncio.Lock()
 
     except Exception as e:
-        logger.error(f"Failed to initialize ONNX Runtime: {e}")
+        logger.error(f"Fatal error configuring server initialization lifespan context: {e}")
         raise
 
     yield
@@ -156,9 +158,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="FishEyeNetAWPF ONNX Inference Engine",
-    description="Memory-optimized fish eye freshness evaluation (ONNX Runtime)",
-    version="1.0.0",
+    title="FreshlyFishy Accurate Inference Engine Core",
+    description="Stateless memory-invariant fish freshness processor extracting true structural activation maps.",
+    version="1.2.0",
     lifespan=lifespan
 )
 
@@ -187,52 +189,50 @@ async def infer_fish_eye(file: UploadFile = File(...)) -> InferenceResponse:
 
     try:
         if global_model_state.get("session") is None:
-            return InferenceResponse(success=False, error_message="ONNX engine layer tracking unit uninitialized.", timestamp=timestamp)
+            return InferenceResponse(success=False, error_message="ONNX session instance completely uninitialized.", timestamp=timestamp)
 
         if not file.content_type or not file.content_type.startswith('image/'):
-            return InferenceResponse(success=False, error_message="Invalid file binary type asset uploaded.", timestamp=timestamp)
+            return InferenceResponse(success=False, error_message="Invalid multipart file asset type payload uploaded.", timestamp=timestamp)
 
         file_bytes = await file.read()
         if len(file_bytes) == 0:
-            return InferenceResponse(success=False, error_message="Empty file package array trace detected.", timestamp=timestamp)
+            return InferenceResponse(success=False, error_message="Zero bytes array trace found in multi-part buffer upload stream.", timestamp=timestamp)
 
         nparr = np.frombuffer(file_bytes, np.uint8)
         img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         if img_bgr is None:
-            return InferenceResponse(success=False, error_message="Failed processing incoming image encoding channels.", timestamp=timestamp)
+            return InferenceResponse(success=False, error_message="Image channel parsing error over input data vector.", timestamp=timestamp)
 
-        # Execute Pipeline Transformations
+        # Execute Segmentation and Standardization Layers
         cropped_eye = batch_hough_eye_segmentation_cv(img_bgr, output_size=(384, 384))
         preprocessed_input = preprocess_image_numpy(cropped_eye, target_size=(384, 384))
 
+        # Enforce execution synchronization lock to preserve low edge memory targets
         async with global_model_state["lock"]:
             try:
                 session = global_model_state["session"]
                 input_name = session.get_inputs()[0].name
-                output_name = session.get_outputs()[0].name
-
-                outputs = session.run([output_name], {input_name: preprocessed_input})
+                
+                # Dynamically retrieve and target both output doors compiled into your graph
+                output_names = [session.get_outputs()[0].name, session.get_outputs()[1].name]
+                
+                outputs = session.run(output_names, {input_name: preprocessed_input})
                 logits = outputs[0][0]
+                feature_maps = outputs[1][0]  # True structural tensor matrix: [256, 96, 96]
 
+                # Compute final probability array
                 exp_logits = np.exp(logits - np.max(logits))
                 probabilities = exp_logits / np.sum(exp_logits)
 
                 pred_class = int(np.argmax(probabilities))
                 confidence = float(probabilities[pred_class])
 
-            except Exception as inference_err:
-                logger.exception(f"ONNX core tracking sequence failure: {inference_err}")
-                return InferenceResponse(success=False, error_message=f"Inference session track crash: {str(inference_err)}", timestamp=timestamp)
+            except Exception as graph_err:
+                logger.error(f"ONNX computational forward propagation trace block failure: {graph_err}")
+                return InferenceResponse(success=False, error_message=f"ONNX graph execution trace error: {str(graph_err)}", timestamp=timestamp)
 
-        # Lightweight Forward Synthetic Attention Overlap Mapping
-        h, w = 384, 384
-        y_center, x_center = h // 2, w // 2
-        y, x = np.ogrid[:h, :w]
-        sigma = max(h, w) * 0.22
-        feature_map = np.exp(-((x - x_center) ** 2 + (y - y_center) ** 2) / (2 * sigma ** 2))
-        feature_map = feature_map * (confidence if confidence > 0.5 else 1.0 - confidence)
-
-        gradcam_overlay = generate_lightweight_cam(feature_map, cropped_eye, alpha=0.45)
+        # Compute dynamic, image-dependent spatial activation overlay map
+        gradcam_overlay = generate_authentic_cam_overlay(feature_maps, cropped_eye, alpha=0.45)
 
         class_labels = {0: "Fresh", 1: "Not Fresh"}
         freshness_class = class_labels.get(pred_class, "Unknown")
@@ -240,7 +240,8 @@ async def infer_fish_eye(file: UploadFile = File(...)) -> InferenceResponse:
         eye_base64 = img_to_base64(cropped_eye)
         overlay_base64 = img_to_base64(gradcam_overlay)
 
-        del preprocessed_input, feature_map, nparr
+        # In-line garbage memory clear to avoid free tier footprint inflation
+        del preprocessed_input, feature_maps, nparr
 
         return InferenceResponse(
             success=True, freshness_class=freshness_class, confidence=round(confidence, 4),
@@ -248,7 +249,7 @@ async def infer_fish_eye(file: UploadFile = File(...)) -> InferenceResponse:
         )
 
     except Exception as e:
-        logger.exception(f"Unexpected endpoint error trace: {str(e)}")
+        logger.exception(f"Pipeline processing failure tracking context: {str(e)}")
         return InferenceResponse(success=False, error_message=f"Server Exception: {str(e)}", timestamp=timestamp)
 
 
@@ -258,17 +259,17 @@ async def health_check():
     return {
         "status": "operational" if session_ready else "initializing",
         "model_loaded": session_ready,
-        "runtime": "ONNX Runtime Layer Engine",
-        "device": "CPU"
+        "runtime": "ONNX Runtime Layer Accelerator Core",
+        "device": "Shared CPU Sandboxed Architecture"
     }
 
 
 @app.get("/")
 async def root():
     return {
-        "service": "FishEyeNetAWPF ONNX Inference Engine Core Portal",
-        "version": "1.0.0",
-        "runtime": "ONNX Runtime (Memory-Optimized Matrix Base)"
+        "service": "FishEyeNetAWPF Dynamic Operational Activation API Backend",
+        "version": "1.2.0",
+        "runtime": "ONNX Matrix Core"
     }
 
 
